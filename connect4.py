@@ -1,6 +1,10 @@
 import copy
 import random
 
+import numpy as np
+import tensorflow as tf
+
+
 class Human_Player:
     def __init__(self, player_num):
         self.player_num = player_num
@@ -14,31 +18,21 @@ class AI:
         self.player_num = player_num
     def next_move(self, board):
         vec = [x for row in board.board for x in row]
-        return random.randrange(1, board.width+1)
+        p1_vec = [x == 1 for x in vec]
+        p2_vec = [x == 2 for x in vec]
+        blank_vec = [x == 0 for x in vec]
+        arr = np.array(p1_vec+p2_vec+blank_vec, dtype=np.bool)
+        return random.randrange(0, board.width+1)
 
 class Board:
-    def __init__(self, width, height, num_ai, swap_players):
+    def __init__(self, width, height, player1, player2):
         self.height = height
         self.width = width
         self.board = [[0 for i in range(width)] for j in range(height)]
         self.last_move = None
         self.num_in_column_count = [0 for i in range(width)]
-        if num_ai == 2:
-            self.player1 = AI(1)
-            self.player2 = AI(2)
-
-        elif num_ai == 1:
-            self.player1 = AI(1)
-            self.player2 = Human_Player(2)
-
-        elif num_ai == 0:
-            self.player1 = Human_Player(1)
-            self.player2 = Human_Player(2)
-
-        if swap_players:
-            tmp = copy.deepcopy(self.player1)
-            self.player1 = copy.deepcopy(self.player2)
-            self.player2 = tmp
+        self.player1 = player1
+        self.player2 = player2
             
     def run_board(self):
         while self.check_winner() == 0:
@@ -135,12 +129,17 @@ class Board:
                 return 0
         return cur_val
 
-b = Board(7, 6, 2, False)
-w = b.run_board()
-if w == -1:
-    print(f"Game ended in a draw")
-else:
-    print(f"Winner is player {w}")
-b.print()
+p1 = AI(1)
+p2 = AI(2)
+
+win_count = [0,0,0]
+for i in range(100):
+    b = Board(7, 6, p1, p2)
+    w = b.run_board()
+    if w == -1:
+        w = 0
+    win_count[w] += 1
+
+print(win_count)
                 
 
