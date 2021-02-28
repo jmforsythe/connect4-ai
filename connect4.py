@@ -170,12 +170,13 @@ class Board:
 
 if __name__ == "__main__":
     NUM_GENS = 10
-    POP_SIZE = 10
+    POP_SIZE = 8
 
     p = [create_model() for i in range(POP_SIZE)]
     try:
         with open("saved_model.json", "r") as file:
             loaded_model = model_from_json(file.read())
+            p[0] = loaded_model
     except:
         pass
 
