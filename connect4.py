@@ -168,63 +168,64 @@ class Board:
                 return 0
         return cur_val
 
-NUM_GENS = 10
-POP_SIZE = 10
+if __name__ == "__main__":
+    NUM_GENS = 10
+    POP_SIZE = 10
 
-p = [create_model() for i in range(POP_SIZE)]
-try:
-    with open("saved_model.json", "r") as file:
-        loaded_model = model_from_json(file.read())
-except:
-    pass
+    p = [create_model() for i in range(POP_SIZE)]
+    try:
+        with open("saved_model.json", "r") as file:
+            loaded_model = model_from_json(file.read())
+    except:
+        pass
 
-print("Starting simulations")
+    print("Starting simulations")
 
-first = None
+    first = None
 
-for gen in range(NUM_GENS):
-    p_score = [0 for i in range(POP_SIZE)]
-    for i in range(POP_SIZE-1):
-        print(gen, i)
-        for j in range(0,i):
-            # player 1 = i, player 2 = j
-            game = Board(WIDTH, HEIGHT, AI(1,p[i]), AI(2,p[j]))
-            x = game.run_board()
-            if x == 1:
-                p_score[i] += 1
-                p_score[j] -= 1
-            if x == 2:
-                print(f"generation {gen}, member {j} beat member {i} while player 2")
-                game.print()
-                p_score[j] += 3
-                p_score[i] -= 3
+    for gen in range(NUM_GENS):
+        p_score = [0 for i in range(POP_SIZE)]
+        for i in range(POP_SIZE-1):
+            print(gen, i)
+            for j in range(0,i):
+                # player 1 = i, player 2 = j
+                game = Board(WIDTH, HEIGHT, AI(1,p[i]), AI(2,p[j]))
+                x = game.run_board()
+                if x == 1:
+                    p_score[i] += 1
+                    p_score[j] -= 1
+                if x == 2:
+                    print(f"generation {gen}, member {j} beat member {i} while player 2")
+                    game.print()
+                    p_score[j] += 3
+                    p_score[i] -= 3
 
-            # player 1 = j, player 2 = i
-            game = Board(WIDTH, HEIGHT, AI(1,p[j]), AI(2,p[i]))
-            x = game.run_board()
-            if x == 1:
-                p_score[j] += 1
-                p_score[i] -= 1
-            if x == 2:
-                print(f"generation {gen}, member {i} beat member {j} while player 2")
-                game.print()
-                p_score[i] += 3
-                p_score[j] -= 3
-    first = p[p_score.index(max(p_score))]
-    p.remove(first)
-    second = p[p_score.index(max(p_score))]
-    p.append(first)
-    crossover_weights = crossover(first, second)
-    new_weights = [first.get_weights(), second.get_weights(), crossover_weights[0], crossover_weights[1]]
-    for i in range(POP_SIZE // 2):
-        new_weights.append(mutate(crossover_weights[0]))
-        new_weights.append(mutate(crossover_weights[1]))
+                # player 1 = j, player 2 = i
+                game = Board(WIDTH, HEIGHT, AI(1,p[j]), AI(2,p[i]))
+                x = game.run_board()
+                if x == 1:
+                    p_score[j] += 1
+                    p_score[i] -= 1
+                if x == 2:
+                    print(f"generation {gen}, member {i} beat member {j} while player 2")
+                    game.print()
+                    p_score[i] += 3
+                    p_score[j] -= 3
+        first = p[p_score.index(max(p_score))]
+        p.remove(first)
+        second = p[p_score.index(max(p_score))]
+        p.append(first)
+        crossover_weights = crossover(first, second)
+        new_weights = [first.get_weights(), second.get_weights(), crossover_weights[0], crossover_weights[1]]
+        for i in range(POP_SIZE // 2):
+            new_weights.append(mutate(crossover_weights[0]))
+            new_weights.append(mutate(crossover_weights[1]))
 
-    for i in range(POP_SIZE):
-        p[i].set_weights(new_weights[i])
+        for i in range(POP_SIZE):
+            p[i].set_weights(new_weights[i])
 
-with open("model.json", "w") as file:
-    file.write(first.to_json())
+    with open("saved_model.json", "w") as file:
+        file.write(first.to_json())
 
-game = Board(WIDTH, HEIGHT, AI(1,first), Human_Player())
-game.run_board()
+    game = Board(WIDTH, HEIGHT, AI(1,first), Human_Player(2))
+    game.run_board()
