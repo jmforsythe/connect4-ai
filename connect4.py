@@ -1,7 +1,7 @@
 import copy
 import random
 
-import numpy as np
+from numpy import atleast_2d, array
 from tensorflow.keras.models import Sequential, model_from_json
 from tensorflow.keras.layers import Dense, Activation
 
@@ -10,9 +10,9 @@ WIDTH = 7
 
 def create_model():
     model = Sequential()
-    model.add(Dense(HEIGHT*WIDTH*3, input_shape=(HEIGHT*WIDTH*3,)))
+    model.add(Dense(HEIGHT*WIDTH + WIDTH, input_shape=(HEIGHT*WIDTH + WIDTH,)))
     model.add(Activation("relu"))
-    model.add(Dense(HEIGHT*WIDTH))
+    model.add(Dense(HEIGHT*WIDTH // 2))
     model.add(Activation("relu"))
     model.add(Dense(WIDTH))
     model.add(Activation("sigmoid"))
@@ -51,11 +51,11 @@ class AI:
         self.model = model
         
     def next_move(self, board):
-        vec = [x for row in board.board for x in row]
-        player_vec = [x == self.player_num for x in vec]
-        opponent_vec = [x == (self.player_num%2)+1 for x in vec]
-        blank_vec = [x == 0 for x in vec]
-        arr = np.atleast_2d(np.array(player_vec+opponent_vec+blank_vec, dtype=np.bool))
+        flat = [x for row in board.board for x in row]
+        vec = [int(x == self.player_num) - int(x == (self.player_num%2)+1) for x in flat]
+        winning_move_vec = [board.detect_winning_move(x) for x in range(WIDTH)]
+        winning_move_vec = [int(x == self.player_num) - int(x == (self.player_num%2)+1) for x in winning_move_vec]
+        arr = atleast_2d(array(vec+winning_move_vec))
         model_out = list(self.model.predict(arr)[0])
         return model_out.index(max(model_out))
 
@@ -168,17 +168,31 @@ class Board:
                 return 0
         return cur_val
 
+    def detect_winning_move(self, column):
+        prev_last = self.last_move
+        t = self.get_top(column)
+        if t >= 0:
+            for i in [self.player1.player_num, self.player2.player_num]:
+                self.board[t][column] = i
+                self.last_move = (t, column)
+                w = self.check_winner()
+                self.board[t][column] = 0
+                self.last_move = prev_last
+                if w:
+                    return w
+        return None
+
 if __name__ == "__main__":
     NUM_GENS = 10
-    POP_SIZE = 8
+    POP_SIZE = 10
 
     p = [create_model() for i in range(POP_SIZE)]
-    try:
+    """try:
         with open("saved_model.json", "r") as file:
             loaded_model = model_from_json(file.read())
             p[0] = loaded_model
     except:
-        pass
+        pass"""
 
     print("Starting simulations")
 
@@ -225,8 +239,15 @@ if __name__ == "__main__":
         for i in range(POP_SIZE):
             p[i].set_weights(new_weights[i])
 
+        p[4] = create_model()
+
     with open("saved_model.json", "w") as file:
         file.write(first.to_json())
 
     game = Board(WIDTH, HEIGHT, AI(1,first), Human_Player(2))
     game.run_board()
+    game.print()
+    print("Switching sides...")
+    game = Board(WIDTH, HEIGHT, Human_Player(1), AI(2,first))
+    game.run_board()
+    game.print()
